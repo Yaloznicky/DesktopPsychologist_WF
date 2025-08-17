@@ -31,10 +31,11 @@ namespace DesktopPsychologist_WF
         private static void ConfigureServices(ServiceCollection services)
         {
             // Регистрация AppDbContext
-            services.AddTransient<AppDbContext>();
+            //services.AddTransient<AppDbContext>();
 
             // Регистрация сервисов
-            services.AddTransient<IDbService, DbService>();
+            //services.AddTransient<IDbService, DbService>();
+            services.AddTransient<IHttpClient, ApiHttpClient>();
 
             // Регистрация форм
             services.AddTransient<Form1>();

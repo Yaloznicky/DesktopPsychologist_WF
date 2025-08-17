@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 using DesktopPsychologist_WF.CustomElements;
 using DesktopPsychologist_WF.Models;
@@ -11,15 +12,18 @@ namespace DesktopPsychologist_WF
 {
     public partial class Form1 : Form
     {
-        private readonly IDbService db;
+        //private readonly IDbService db;
+        private readonly IHttpClient apiClient;
         private bool isResizing = false;
         private string currentMenuSection = "btnAboutMe";
         private User currentUser = null;
 
 
-        public Form1(IDbService db)
+        //public Form1(IDbService db, IHttpClient apiClient)
+        public Form1(IHttpClient apiClient)
         {
-            this.db = db;
+            //this.db = db;
+            this.apiClient = apiClient;
 
             InitializeComponent();
 
@@ -102,7 +106,8 @@ namespace DesktopPsychologist_WF
         {
             labelTitle.Text = "Услуги";
 
-            List<Theme> themes = db.GetThemes();
+            //List<Theme> themes = db.GetThemes();
+            List<Theme> themes = apiClient.GetThemesAsync().Result;
             themes.Reverse();
 
             int currentTopPosition = 20;
@@ -188,7 +193,8 @@ namespace DesktopPsychologist_WF
                     };
                     deleteTheme.Click += (s, e) =>
                     {
-                        db.DeleteThemes(theme.id);
+                        //db.DeleteThemes(theme.id);
+                        apiClient.DeleteThemeAsync(theme.id);
                         UpdatePanelLayout();
                     };
                     currentTopPosition = deleteTheme.Bottom + 80;
@@ -241,7 +247,8 @@ namespace DesktopPsychologist_WF
         {
             labelTitle.Text = "Отзывы";
 
-            var reviews = db.GetReviews();
+            //var reviews = db.GetReviews();
+            var reviews = apiClient.GetReviewsAsync().Result;
             reviews.Reverse();
 
             int currentTopPosition = 20;
@@ -331,7 +338,8 @@ namespace DesktopPsychologist_WF
                     };
                     deleteReview.Click += (s, e) =>
                     {
-                        db.DeleteReviews(review.Id);
+                        //db.DeleteReviews(review.Id);
+                        apiClient.DeleteReviewAsync(review.Id);
                         UpdatePanelLayout();
                     };
                     currentTopPosition = deleteReview.Bottom + 60;
@@ -402,6 +410,7 @@ namespace DesktopPsychologist_WF
 
         private void UpdatePanelLayout()
         {
+            //Thread.Sleep(500);
             panelContent.Controls.Clear();
             showContent();
         }
@@ -439,9 +448,17 @@ namespace DesktopPsychologist_WF
                                 continue;
                             }
 
-                            currentUser = db.GetUser(loginForm.txtLogin.Text);
+                            //currentUser = db.GetUser(loginForm.txtLogin.Text);
+                            currentUser = apiClient.CheckUserByLoginAsync(loginForm.txtLogin.Text).Result;
+
                             if (currentUser is null)
                             {
+                                MessageBox.Show(
+                                    "Такой пользователь не зарегистрирован. Пройдите регистрацию.",
+                                    "Ошибка ввода!",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error
+                                );
                                 loginForm.Dispose();
                                 Registration();
                                 break;
@@ -514,15 +531,20 @@ namespace DesktopPsychologist_WF
                             continue;
                         }
 
-                        if (db.GetUser(registrationForm.txtLogin.Text) is null)
+                        User newUser = apiClient.CheckUserByLoginAsync(registrationForm.txtLogin.Text).Result;
+
+                        if (newUser is null)
                         {                            
-                            User newUser = new User(
+                                newUser = new User(
                                 registrationForm.txtLogin.Text,
                                 registrationForm.GetGender(),
                                 registrationForm.txtPassword.Text
                             );
+
+                            //db.SetUser(currentUser);
+                            apiClient.CreateUserAsync(newUser);
+                            
                             currentUser = newUser;
-                            db.SetUser(currentUser);
 
                             labelUser.Text = currentUser.Login;
                             btnLogin.Text = "Выход";
@@ -550,7 +572,8 @@ namespace DesktopPsychologist_WF
             {
                 if (id != -1)
                 {
-                    Review review = db.GetReview(id);
+                    //Review review = db.GetReview(id);
+                    Review review = apiClient.GetReviewAsync(id).Result;
                     reviewForm.txtReview.Text = review.Text;
                 }
 
@@ -573,7 +596,10 @@ namespace DesktopPsychologist_WF
 
                         if(id != -1)
                         {
-                            db.EditReviews(id, reviewForm.txtReview.Text);
+                            //db.EditReviews(id, reviewForm.txtReview.Text);
+                            Review updateReviewFields = new Review();
+                            updateReviewFields.Text = reviewForm.txtReview.Text;
+                            apiClient.UpdateReviewAsync(id, updateReviewFields);
                             break;
                         }
                         else
@@ -582,7 +608,8 @@ namespace DesktopPsychologist_WF
                             newReview.DateTimeReview = DateTime.Now;
                             newReview.Text = reviewForm.txtReview.Text;
                             newReview.UsersId = currentUser.Id;
-                            db.SetReview(newReview);
+                            //db.SetReview(newReview);
+                            apiClient.CreateReviewAsync(newReview);
                             break;
                         }
                     }
@@ -597,7 +624,8 @@ namespace DesktopPsychologist_WF
             {
                 if (id != -1) 
                 {
-                    Theme theme = db.GetTheme(id);  
+                    //Theme theme = db.GetTheme(id);  
+                    Theme theme = apiClient.GetThemeAsync(id).Result;
                     themeForm.txtName.Text = theme.themeName;
                     themeForm.txtDescription.Text = theme.text;
                 }
@@ -621,7 +649,11 @@ namespace DesktopPsychologist_WF
 
                         if(id != -1)
                         {
-                            db.EditThemes(id, themeForm.txtName.Text, themeForm.txtDescription.Text);
+                            //db.EditThemes(id, themeForm.txtName.Text, themeForm.txtDescription.Text);
+                            Theme updateThemeFields = new Theme();
+                            updateThemeFields.themeName = themeForm.txtName.Text;
+                            updateThemeFields.text = themeForm.txtDescription.Text;
+                            apiClient.UpdateThemeAsync(id, updateThemeFields);
                             break;
                         }
                         else
@@ -630,7 +662,8 @@ namespace DesktopPsychologist_WF
                             newTheme.pathImage = "img/service.jpg";
                             newTheme.themeName = themeForm.txtName.Text;
                             newTheme.text = themeForm.txtDescription.Text;
-                            db.SetTheme(newTheme);
+                            //db.SetTheme(newTheme);
+                            apiClient.CreateThemeAsync(newTheme);
                             break;
                         }
                     }
