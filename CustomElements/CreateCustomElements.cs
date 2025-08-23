@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using DesktopPsychologist_WF.Models;
 
@@ -161,8 +156,6 @@ namespace DesktopPsychologist_WF.CustomElements
                 Width = panelContentWidth,                               
                 AutoSize = true,
                 Location = new Point(10, currentTopPosition),
-                
-                //CellBorderStyle = TableLayoutPanelCellBorderStyle.OutsetPartial // BorderStyle для тестирования
             };
 
             card.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));
@@ -231,7 +224,6 @@ namespace DesktopPsychologist_WF.CustomElements
                     textBox.Text = review.Text;
                     textBox.Font = new Font("Segoe UI", 16, FontStyle.Regular);
                     textBox.Width = card.Width - (int)card.ColumnStyles[0].Width - (int)card.ColumnStyles[1].Width - 30;
-                    //textBox.BorderStyle = BorderStyle.FixedSingle; // BorderStyle для тестирования
                     textBox.Height = SizeCalculation(review.Text, textBox, textBox.Width);
                 }
 

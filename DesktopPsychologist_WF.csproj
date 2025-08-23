@@ -158,9 +158,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomElements\CreateCustomElements.cs" />
-    <Compile Include="EntityModels\ReviewEntity.cs" />
-    <Compile Include="EntityModels\ThemeEntity.cs" />
-    <Compile Include="EntityModels\UserEntity.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -174,6 +171,7 @@
       <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Models\Review.cs" />
+    <Compile Include="Models\TextHolder.cs" />
     <Compile Include="Models\Theme.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Program.cs" />
@@ -190,8 +188,6 @@
     <Compile Include="ReviewForm.Designer.cs">
       <DependentUpon>ReviewForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\AppDbContext.cs" />
-    <Compile Include="Services\DbService.cs" />
     <Compile Include="Services\ApiHttpClient.cs" />
     <Compile Include="ThemeForm.cs">
       <SubType>Form</SubType>

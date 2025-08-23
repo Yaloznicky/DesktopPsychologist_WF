@@ -76,7 +76,6 @@
             this.txtLogin.Name = "txtLogin";
             this.txtLogin.Size = new System.Drawing.Size(308, 38);
             this.txtLogin.TabIndex = 1;
-            this.txtLogin.Text = "Admin";
             // 
             // txtPassword
             // 
@@ -86,7 +85,6 @@
             this.txtPassword.PasswordChar = '*';
             this.txtPassword.Size = new System.Drawing.Size(308, 38);
             this.txtPassword.TabIndex = 2;
-            this.txtPassword.Text = "123";
             this.txtPassword.WordWrap = false;
             // 
             // btnEnter

@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using DesktopPsychologist_WF.CustomElements;
 using DesktopPsychologist_WF.Models;
@@ -12,18 +11,18 @@ namespace DesktopPsychologist_WF
 {
     public partial class Form1 : Form
     {
-        //private readonly IDbService db;
         private readonly IHttpClient apiClient;
         private bool isResizing = false;
         private string currentMenuSection = "btnAboutMe";
         private User currentUser = null;
+        private TextHolder textHolder;
 
 
-        //public Form1(IDbService db, IHttpClient apiClient)
         public Form1(IHttpClient apiClient)
         {
-            //this.db = db;
             this.apiClient = apiClient;
+
+            this.textHolder = new TextHolder();
 
             InitializeComponent();
 
@@ -39,7 +38,7 @@ namespace DesktopPsychologist_WF
             showContent();
         }
 
-        private void showContent()
+        private async Task showContent()
         {
             switch (currentMenuSection)
             {
@@ -47,13 +46,13 @@ namespace DesktopPsychologist_WF
                     AboutMe();
                     break;
                 case "btnThemes":
-                    Themes();
+                    await Themes();
                     break;
                 case "btnPrice":
                     Price();
                     break;
                 case "btnRewiews":
-                    Rewiews();
+                    await Reviews();
                     break;
                 case "btnContacts":
                     Contacts();
@@ -67,8 +66,8 @@ namespace DesktopPsychologist_WF
         {
             labelTitle.Text = "Обо мне";
 
-            int currentTopPosition = 20; 
-            
+            int currentTopPosition = 20;
+
             // 1. Создаем и настраиваем PictureBox
 
             var pictureBox = CreateCustomElements.CustomPictureBox(@"img/avatar_W.jpg", currentTopPosition, panelContent.Width);
@@ -77,129 +76,122 @@ namespace DesktopPsychologist_WF
 
             // 2. Создаем текстовые элементы
 
-                // TODO: Сделать таблицу в БД
-            string[] testText = {
-                "Lorem ipsum dolor sit amet",
-                "Lorem ipsum dolor sit amet, consectetur adipisicing elit.Ad adipisci cumque impedit nobis, debitis, quis culpa temporibus distinctio sit saepe et fugit facere corporis voluptate at quidem, ratione recusandae itaque blanditiis id! Ut, aut dignissimos porro quis, ad suscipit.Perferendis culpa cupiditate nam tenetur earum illo fugiat voluptates sint similique."
-            };
+            var content = new TextBox();
 
-            for (int i = 0; i < 4; i++)
+            content = CreateCustomElements.CustomTextBox(textHolder.title_AboutMe, currentTopPosition, panelContent.Width, "заголовок");
+            panelContent.Controls.Add(content);
+            currentTopPosition = content.Bottom;
+            for (int i = 0; i < 3; i++)
             {
-                var content = new TextBox();
-                if(i == 0)
-                {
-                    content = CreateCustomElements.CustomTextBox(testText[i], currentTopPosition, panelContent.Width, "заголовок");
-                }
-                else
-                {
-                    content = CreateCustomElements.CustomTextBox(testText[1], currentTopPosition, panelContent.Width, "абзац");
-                }
-
+                content = CreateCustomElements.CustomTextBox(textHolder.text_AboutMe, currentTopPosition, panelContent.Width, "абзац");
                 panelContent.Controls.Add(content);
+                currentTopPosition = content.Bottom;
+            }
 
-                // Текущая позиция Y для следующего элемента
-                currentTopPosition = content.Bottom; 
-            }          
         }
 
-        private void Themes()
+        public async Task Themes()
         {
             labelTitle.Text = "Услуги";
 
-            //List<Theme> themes = db.GetThemes();
-            List<Theme> themes = apiClient.GetThemesAsync().Result;
-            themes.Reverse();
-
-            int currentTopPosition = 20;
-            var title = new TextBox();
-            var content = new TextBox();
-
-            if(checkAdmin())
+            try
             {
-                Button addTheme = new Button()
+                var themes = await apiClient.GetThemesAsync();
+                themes.Reverse();
+
+                int currentTopPosition = 20;
+                var title = new TextBox();
+                var content = new TextBox();
+
+                if (checkAdmin())
                 {
-                    Text = "Добавить новую услугу",
-                    Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                    BackColor = Color.Blue,
-                    ForeColor = Color.White,
-                    Size = new Size(300, 50),
-                    FlatStyle = FlatStyle.Flat,
-                    Anchor = AnchorStyles.Top,
-                    Location = new Point((panelContent.Width - 300) / 2, currentTopPosition)
-                };
-                addTheme.Click += (s, e) => 
-                {
-                    WriteTheme();
-                    UpdatePanelLayout();
-                };
-                panelContent.Controls.Add(addTheme);
-                currentTopPosition = addTheme.Bottom + 60;
-            }
-
-            foreach (var theme in themes)
-            {
-                // 1. Создаем и настраиваем PictureBox
-
-                var pictureBox = CreateCustomElements.CustomPictureBox(theme.pathImage, currentTopPosition, panelContent.Width);
-                panelContent.Controls.Add(pictureBox);
-                currentTopPosition += pictureBox.Height + 50;
-
-
-                // 2. Создаем текстовые элементы
-
-                title = CreateCustomElements.CustomTextBox(theme.themeName, currentTopPosition, panelContent.Width, "заголовок");
-                currentTopPosition = title.Bottom;
-
-                content = CreateCustomElements.CustomTextBox(theme.text, currentTopPosition, panelContent.Width, "абзац");
-                if(checkAdmin()) currentTopPosition = content.Bottom + 20;
-                else currentTopPosition = content.Bottom + 80;
-                
-
-                panelContent.Controls.Add(title);
-                panelContent.Controls.Add(content);  
-                
-                if(checkAdmin())
-                {
-                    Button editeTheme = new Button()
+                    Button addTheme = new Button()
                     {
-                        //Name = theme.id.ToString(),
-                        Text = "Изменить",
-
+                        Text = "Добавить новую услугу",
                         Font = new Font("Segoe UI", 16, FontStyle.Bold),
                         BackColor = Color.Blue,
                         ForeColor = Color.White,
-                        Size = new Size(200, 50),
+                        Size = new Size(300, 50),
                         FlatStyle = FlatStyle.Flat,
                         Anchor = AnchorStyles.Top,
-                        Location = new Point((panelContent.Width - 400) / 2, currentTopPosition)
+                        Location = new Point((panelContent.Width - 300) / 2, currentTopPosition)
                     };
-                    editeTheme.Click += (s, e) =>
+                    addTheme.Click += async (s, e) =>
                     {
-                        WriteTheme(theme.id);
+                        await WriteTheme();
                         UpdatePanelLayout();
                     };
-                    panelContent.Controls.Add(editeTheme);
-
-                    Button deleteTheme = new Button()
-                    {
-                        Text = "Удалить",
-                        Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                        BackColor = Color.Red,
-                        ForeColor = Color.White,
-                        Size = new Size(200, 50),
-                        FlatStyle = FlatStyle.Flat,
-                        Anchor = AnchorStyles.Top,
-                        Location = new Point(editeTheme.Right + 40, currentTopPosition)
-                    };
-                    deleteTheme.Click += (s, e) =>
-                    {
-                        //db.DeleteThemes(theme.id);
-                        apiClient.DeleteThemeAsync(theme.id);
-                        UpdatePanelLayout();
-                    };
-                    currentTopPosition = deleteTheme.Bottom + 80;
-                    panelContent.Controls.Add(deleteTheme);
+                    panelContent.Controls.Add(addTheme);
+                    currentTopPosition = addTheme.Bottom + 60;
                 }
+
+                foreach (var theme in themes)
+                {
+                    // 1. Создаем и настраиваем PictureBox
+
+                    var pictureBox = CreateCustomElements.CustomPictureBox(theme.pathImage, currentTopPosition, panelContent.Width);
+                    panelContent.Controls.Add(pictureBox);
+                    currentTopPosition += pictureBox.Height + 50;
+
+
+                    // 2. Создаем текстовые элементы
+
+                    title = CreateCustomElements.CustomTextBox(theme.themeName, currentTopPosition, panelContent.Width, "заголовок");
+                    currentTopPosition = title.Bottom;
+
+                    content = CreateCustomElements.CustomTextBox(theme.text, currentTopPosition, panelContent.Width, "абзац");
+                    if (checkAdmin()) currentTopPosition = content.Bottom + 20;
+                    else currentTopPosition = content.Bottom + 80;
+
+
+                    panelContent.Controls.Add(title);
+                    panelContent.Controls.Add(content);
+
+                    if (checkAdmin())
+                    {
+                        Button editeTheme = new Button()
+                        {
+                            Text = "Изменить",
+
+                            Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                            BackColor = Color.Blue,
+                            ForeColor = Color.White,
+                            Size = new Size(200, 50),
+                            FlatStyle = FlatStyle.Flat,
+                            Anchor = AnchorStyles.Top,
+                            Location = new Point((panelContent.Width - 400) / 2, currentTopPosition)
+                        };
+                        editeTheme.Click += async (s, e) =>
+                        {
+                            await WriteTheme(theme.id);
+                            UpdatePanelLayout();
+                        };
+                        panelContent.Controls.Add(editeTheme);
+
+                        Button deleteTheme = new Button()
+                        {
+                            Text = "Удалить",
+                            Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                            BackColor = Color.Red,
+                            ForeColor = Color.White,
+                            Size = new Size(200, 50),
+                            FlatStyle = FlatStyle.Flat,
+                            Anchor = AnchorStyles.Top,
+                            Location = new Point(editeTheme.Right + 40, currentTopPosition)
+                        };
+                        deleteTheme.Click += async (s, e) =>
+                        {
+                            await apiClient.DeleteThemeAsync(theme.id);
+                            UpdatePanelLayout();
+                        };
+                        currentTopPosition = deleteTheme.Bottom + 80;
+                        panelContent.Controls.Add(deleteTheme);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"{ex.Message}", "Ошибка доступа к базе данных", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -215,171 +207,150 @@ namespace DesktopPsychologist_WF
 
             int currentTopPosition = 20;
 
-            // TODO: Сделать таблицу в БД
-            string[][] cardText = {
-                new string[] {
-                    "Первая косультация",
-                    "Цена 2000 руб.",
-                    "Знакомимся\nУточняем запрос\nНамечаем план психотерапии\nФормируем доверительное и безопасное общение"
-                },
-                new string[] {
-                    "Разовая косультация",
-                    "Цена 4000 руб.",
-                    "При оплате каждой встречи отедльно"
-                },
-                new string[] {
-                    "Пакет на 5 косультаций",
-                    "Цена 18000 руб.",
-                    "При оплате пакета стоимость одной консультации дешевле на 10%\n\n(3 600 руб. за одну встречу)"
-                }
-            };
-
-            for(int i = 0; i < cardText.Length; i++)
+            for (int i = 0; i < textHolder.priceCardText.Length; i++)
             {
-                var cardPrice = CreateCustomElements.PriceCard(cardText[i], currentTopPosition, panelContent.Width);
+                var cardPrice = CreateCustomElements.PriceCard(textHolder.priceCardText[i], currentTopPosition, panelContent.Width);
                 panelContent.Controls.Add(cardPrice);
 
                 currentTopPosition = cardPrice.Bottom + 20;
             }
         }
 
-        private void Rewiews()
+        public async Task Reviews()
         {
             labelTitle.Text = "Отзывы";
 
-            //var reviews = db.GetReviews();
-            var reviews = apiClient.GetReviewsAsync().Result;
-            reviews.Reverse();
-
-            int currentTopPosition = 20;
-
-            Button writeReview = new Button()
+            try
             {
-                Text = "Написать свой отзыв",
-                Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                BackColor = Color.Orchid,
-                ForeColor = Color.White,
-                Size = new Size(300, 50),
-                FlatStyle = FlatStyle.Flat,
-                Anchor = AnchorStyles.Top,
-                Location = new Point((panelContent.Width - 300) / 2, currentTopPosition)
-            };
+                var reviews = await apiClient.GetReviewsAsync();
+                reviews.Reverse();
 
-            writeReview.Click += (s, e) =>
-            {
-                WriteReview();
-                UpdatePanelLayout();
-            };
+                int currentTopPosition = 20;
 
-            panelContent.Controls.Add(writeReview);
-
-            currentTopPosition = writeReview.Bottom + 20;
-
-            if (labelUser.Text != "")
-                writeReview.Enabled = true;
-            else
-            {
-                writeReview.Enabled = false;
-                string message = "Отправить отзыв могут только зарегистрированные пользователи!!!";
-
-                var text = new Label()
+                Button writeReview = new Button()
                 {
-                    Text = message,
-                    Font = new Font("Segoe UI", 16),
-                    ForeColor = Color.Red,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Width = panelContent.Width,
-                    Height = 60,
-                    Location = new Point(0, currentTopPosition - 20)
+                    Text = "Написать свой отзыв",
+                    Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                    BackColor = Color.Orchid,
+                    ForeColor = Color.White,
+                    Size = new Size(300, 50),
+                    FlatStyle = FlatStyle.Flat,
+                    Anchor = AnchorStyles.Top,
+                    Location = new Point((panelContent.Width - 300) / 2, currentTopPosition)
                 };
 
-                panelContent.Controls.Add(text);
-                currentTopPosition = text.Bottom + 20;
-            }
-
-
-            foreach (var review in reviews)
-            {
-                var cardReview = CreateCustomElements.ReviewCard(review, currentTopPosition, panelContent.Width);
-                panelContent.Controls.Add(cardReview);
-
-                if (checkAdmin())
+                writeReview.Click += async (s, e) =>
                 {
-                    currentTopPosition = cardReview.Bottom + 10;
+                    await WriteReview();
+                    UpdatePanelLayout();
+                };
 
-                    Button editeReview = new Button()
-                    {
-                        Text = "Изменить",
-                        Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                        BackColor = Color.Blue,
-                        ForeColor = Color.White,
-                        Size = new Size(200, 50),
-                        FlatStyle = FlatStyle.Flat,
-                        Anchor = AnchorStyles.Top,
-                        Location = new Point((panelContent.Width - 400) / 2, currentTopPosition)
-                    };
-                    editeReview.Click += (s, e) =>
-                    {
-                        WriteReview(review.Id);
-                        UpdatePanelLayout();
-                    };
-                    panelContent.Controls.Add(editeReview);
+                panelContent.Controls.Add(writeReview);
 
-                    Button deleteReview = new Button()
-                    {
-                        Text = "Удалить",
-                        Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                        BackColor = Color.Red,
-                        ForeColor = Color.White,
-                        Size = new Size(200, 50),
-                        FlatStyle = FlatStyle.Flat,
-                        Anchor = AnchorStyles.Top,
-                        Location = new Point(editeReview.Right + 40, currentTopPosition)
-                    };
-                    deleteReview.Click += (s, e) =>
-                    {
-                        //db.DeleteReviews(review.Id);
-                        apiClient.DeleteReviewAsync(review.Id);
-                        UpdatePanelLayout();
-                    };
-                    currentTopPosition = deleteReview.Bottom + 60;
-                    panelContent.Controls.Add(deleteReview);
-                }
+                currentTopPosition = writeReview.Bottom + 20;
+
+                if (labelUser.Text != "")
+                    writeReview.Enabled = true;
                 else
                 {
-                    currentTopPosition = cardReview.Bottom + 40;
+                    writeReview.Enabled = false;
+                    string message = "Отправить отзыв могут только зарегистрированные пользователи!!!";
+
+                    var text = new Label()
+                    {
+                        Text = message,
+                        Font = new Font("Segoe UI", 16),
+                        ForeColor = Color.Red,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Width = panelContent.Width,
+                        Height = 60,
+                        Location = new Point(0, currentTopPosition - 20)
+                    };
+
+                    panelContent.Controls.Add(text);
+                    currentTopPosition = text.Bottom + 20;
                 }
 
-            }
 
+                foreach (var review in reviews)
+                {
+                    var cardReview = CreateCustomElements.ReviewCard(review, currentTopPosition, panelContent.Width);
+                    panelContent.Controls.Add(cardReview);
+
+                    if (checkAdmin())
+                    {
+                        currentTopPosition = cardReview.Bottom + 10;
+
+                        Button editeReview = new Button()
+                        {
+                            Text = "Изменить",
+                            Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                            BackColor = Color.Blue,
+                            ForeColor = Color.White,
+                            Size = new Size(200, 50),
+                            FlatStyle = FlatStyle.Flat,
+                            Anchor = AnchorStyles.Top,
+                            Location = new Point((panelContent.Width - 400) / 2, currentTopPosition)
+                        };
+                        editeReview.Click += async (s, e) =>
+                        {
+                            await WriteReview(review.Id);
+                            UpdatePanelLayout();
+                        };
+                        panelContent.Controls.Add(editeReview);
+
+                        Button deleteReview = new Button()
+                        {
+                            Text = "Удалить",
+                            Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                            BackColor = Color.Red,
+                            ForeColor = Color.White,
+                            Size = new Size(200, 50),
+                            FlatStyle = FlatStyle.Flat,
+                            Anchor = AnchorStyles.Top,
+                            Location = new Point(editeReview.Right + 40, currentTopPosition)
+                        };
+                        deleteReview.Click += async (s, e) =>
+                        {
+                            await apiClient.DeleteReviewAsync(review.Id);
+                            UpdatePanelLayout();
+                        };
+                        currentTopPosition = deleteReview.Bottom + 60;
+                        panelContent.Controls.Add(deleteReview);
+                    }
+                    else
+                    {
+                        currentTopPosition = cardReview.Bottom + 40;
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"{ex.Message}", "Ошибка доступа к базе данных", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void Contacts()
         {
             labelTitle.Text = "Контакты";
 
-            string[] testText = {
-                "Фамилия Имя Отчество",
-                "тел. +7 (000) 000-00-00",
-                "e-mail: psiho@gmail.com"
-            };
-
-            for (int i = testText.Count() - 1; i >= 0 ; i--)
+            for (int i = textHolder.contacts.Count() - 1; i >= 0; i--)
             {
                 var content = new Label();
                 if (i == 0)
                 {
-                    content.Text = testText[i];
+                    content.Text = textHolder.contacts[i];
                     content.Font = new Font("Segoe UI", 20, FontStyle.Bold);
                 }
                 else
                 {
-                    content.Text = testText[i];
+                    content.Text = textHolder.contacts[i];
                     content.Font = new Font("Segoe UI", 14);
                 }
 
                 content.TextAlign = ContentAlignment.MiddleCenter;
-                content.ForeColor = Color.FromArgb(64,64,64);
+                content.ForeColor = Color.FromArgb(64, 64, 64);
                 content.Height = 80;
                 content.Dock = DockStyle.Top;
                 content.BackColor = Color.White;
@@ -389,7 +360,6 @@ namespace DesktopPsychologist_WF
 
             }
         }
-
 
 
         // Перерисовка формы при изменении размера
@@ -410,7 +380,6 @@ namespace DesktopPsychologist_WF
 
         private void UpdatePanelLayout()
         {
-            //Thread.Sleep(500);
             panelContent.Controls.Clear();
             showContent();
         }
@@ -418,9 +387,9 @@ namespace DesktopPsychologist_WF
 
 
         // Основной функционал
-        private void btnLogin_Click(object sender, EventArgs e)
+        private async void btnLogin_Click(object sender, EventArgs e)
         {
-            if(btnLogin.Text == "Вход")
+            if (btnLogin.Text == "Вход")
             {
                 using (LoginForm loginForm = new LoginForm())
                 {
@@ -428,10 +397,10 @@ namespace DesktopPsychologist_WF
                     do
                     {
                         dialogResult = loginForm.ShowDialog();
-                        if(dialogResult == DialogResult.Yes)
+                        if (dialogResult == DialogResult.Yes)
                         {
                             loginForm.Dispose();
-                            Registration();
+                            await Registration();
                             break;
                         }
 
@@ -448,40 +417,47 @@ namespace DesktopPsychologist_WF
                                 continue;
                             }
 
-                            //currentUser = db.GetUser(loginForm.txtLogin.Text);
-                            currentUser = apiClient.CheckUserByLoginAsync(loginForm.txtLogin.Text).Result;
-
-                            if (currentUser is null)
+                            try
                             {
-                                MessageBox.Show(
-                                    "Такой пользователь не зарегистрирован. Пройдите регистрацию.",
-                                    "Ошибка ввода!",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error
-                                );
-                                loginForm.Dispose();
-                                Registration();
-                                break;
-                            }
-                            else
-                            {
-                                PasswordHasher<User> hasher = new PasswordHasher<User>();
-                                PasswordVerificationResult result = hasher.VerifyHashedPassword(currentUser, currentUser.Password, loginForm.txtPassword.Text);
+                                currentUser = await apiClient.CheckUserByLoginAsync(loginForm.txtLogin.Text);
 
-                                if (result == 0)
+                                if (currentUser is null)
                                 {
                                     MessageBox.Show(
-                                        "Неправильный ЛОГИН или ПАРОЛЬ.",
+                                        "Такой пользователь не зарегистрирован. Пройдите регистрацию.",
                                         "Ошибка ввода!",
                                         MessageBoxButtons.OK,
                                         MessageBoxIcon.Error
                                     );
-                                    continue;
+                                    loginForm.Dispose();
+                                    await Registration();
+                                    break;
                                 }
+                                else
+                                {
+                                    PasswordHasher<User> hasher = new PasswordHasher<User>();
+                                    PasswordVerificationResult result = hasher.VerifyHashedPassword(currentUser, currentUser.Password, loginForm.txtPassword.Text);
 
-                                labelUser.Text = currentUser.Login;
-                                btnLogin.Text = "Выход";
-                                break;
+                                    if (result == 0)
+                                    {
+                                        MessageBox.Show(
+                                            "Неправильный ЛОГИН или ПАРОЛЬ.",
+                                            "Ошибка ввода!",
+                                            MessageBoxButtons.OK,
+                                            MessageBoxIcon.Error
+                                        );
+                                        continue;
+                                    }
+
+                                    labelUser.Text = currentUser.Login;
+                                    btnLogin.Text = "Выход";
+                                    break;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"{ex.Message}", "Ошибка доступа к базе данных", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                continue;
                             }
 
                         }
@@ -497,9 +473,9 @@ namespace DesktopPsychologist_WF
             }
         }
 
-        private void Registration()
+        private async Task Registration()
         {
-            using (RegistrationForm registrationForm = new RegistrationForm()) 
+            using (RegistrationForm registrationForm = new RegistrationForm())
             {
                 DialogResult dialogResult;
 
@@ -507,7 +483,7 @@ namespace DesktopPsychologist_WF
                 {
                     dialogResult = registrationForm.ShowDialog();
 
-                    if(dialogResult == DialogResult.OK)
+                    if (dialogResult == DialogResult.OK)
                     {
                         if (registrationForm.txtLogin.Text == "" || registrationForm.txtPassword.Text == "" || registrationForm.txtConfirmPassword.Text == "")
                         {
@@ -520,7 +496,7 @@ namespace DesktopPsychologist_WF
                             continue;
                         }
 
-                        if(registrationForm.txtPassword.Text != registrationForm.txtConfirmPassword.Text)
+                        if (registrationForm.txtPassword.Text != registrationForm.txtConfirmPassword.Text)
                         {
                             MessageBox.Show(
                                 "Проверьте правильность ввода паролей!",
@@ -531,33 +507,40 @@ namespace DesktopPsychologist_WF
                             continue;
                         }
 
-                        User newUser = apiClient.CheckUserByLoginAsync(registrationForm.txtLogin.Text).Result;
-
-                        if (newUser is null)
-                        {                            
-                                newUser = new User(
-                                registrationForm.txtLogin.Text,
-                                registrationForm.GetGender(),
-                                registrationForm.txtPassword.Text
-                            );
-
-                            //db.SetUser(currentUser);
-                            apiClient.CreateUserAsync(newUser);
-                            
-                            currentUser = newUser;
-
-                            labelUser.Text = currentUser.Login;
-                            btnLogin.Text = "Выход";
-                            break;
-                        }
-                        else
+                        try
                         {
-                            MessageBox.Show(
-                                "Такой пользователь уже есть. Придумайте другой логин.",
-                                "Ошибка ввода!",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error
-                            );
+                            User newUser = await apiClient.CheckUserByLoginAsync(registrationForm.txtLogin.Text);
+
+                            if (newUser is null)
+                            {
+                                newUser = new User(
+                                    registrationForm.txtLogin.Text,
+                                    registrationForm.GetGender(),
+                                    registrationForm.txtPassword.Text
+                                );
+
+                                await apiClient.CreateUserAsync(newUser);
+
+                                currentUser = await apiClient.CheckUserByLoginAsync(newUser.Login);
+
+                                labelUser.Text = currentUser.Login;
+                                btnLogin.Text = "Выход";
+                                break;
+                            }
+                            else
+                            {
+                                MessageBox.Show(
+                                    "Такой пользователь уже есть. Придумайте другой логин.",
+                                    "Ошибка ввода!",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error
+                                );
+                                continue;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"{ex.Message}", "Ошибка доступа к базе данных", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             continue;
                         }
                     }
@@ -566,13 +549,12 @@ namespace DesktopPsychologist_WF
             }
         }
 
-        private void WriteReview(int id = -1)
+        private async Task WriteReview(int id = -1)
         {
             using (ReviewForm reviewForm = new ReviewForm())
             {
                 if (id != -1)
                 {
-                    //Review review = db.GetReview(id);
                     Review review = apiClient.GetReviewAsync(id).Result;
                     reviewForm.txtReview.Text = review.Text;
                 }
@@ -583,7 +565,7 @@ namespace DesktopPsychologist_WF
                     dialogResult = reviewForm.ShowDialog();
                     if (dialogResult == DialogResult.OK)
                     {
-                        if(reviewForm.txtReview.Text == "")
+                        if (reviewForm.txtReview.Text == "")
                         {
                             MessageBox.Show(
                                 "Вы ничего не написали. Добавьте отзыв.",
@@ -594,12 +576,11 @@ namespace DesktopPsychologist_WF
                             continue;
                         }
 
-                        if(id != -1)
+                        if (id != -1)
                         {
-                            //db.EditReviews(id, reviewForm.txtReview.Text);
                             Review updateReviewFields = new Review();
                             updateReviewFields.Text = reviewForm.txtReview.Text;
-                            apiClient.UpdateReviewAsync(id, updateReviewFields);
+                            await apiClient.UpdateReviewAsync(id, updateReviewFields);
                             break;
                         }
                         else
@@ -608,24 +589,21 @@ namespace DesktopPsychologist_WF
                             newReview.DateTimeReview = DateTime.Now;
                             newReview.Text = reviewForm.txtReview.Text;
                             newReview.UsersId = currentUser.Id;
-                            //db.SetReview(newReview);
-                            apiClient.CreateReviewAsync(newReview);
+                            await apiClient.CreateReviewAsync(newReview);
                             break;
                         }
                     }
                 } while (dialogResult == DialogResult.OK);
             }
-
         }
 
-        private void WriteTheme(int id = -1)
+        private async Task WriteTheme(int id = -1)
         {
             using (ThemeForm themeForm = new ThemeForm())
             {
-                if (id != -1) 
+                if (id != -1)
                 {
-                    //Theme theme = db.GetTheme(id);  
-                    Theme theme = apiClient.GetThemeAsync(id).Result;
+                    Theme theme = await apiClient.GetThemeAsync(id);
                     themeForm.txtName.Text = theme.themeName;
                     themeForm.txtDescription.Text = theme.text;
                 }
@@ -647,13 +625,12 @@ namespace DesktopPsychologist_WF
                             continue;
                         }
 
-                        if(id != -1)
+                        if (id != -1)
                         {
-                            //db.EditThemes(id, themeForm.txtName.Text, themeForm.txtDescription.Text);
                             Theme updateThemeFields = new Theme();
                             updateThemeFields.themeName = themeForm.txtName.Text;
                             updateThemeFields.text = themeForm.txtDescription.Text;
-                            apiClient.UpdateThemeAsync(id, updateThemeFields);
+                            await apiClient.UpdateThemeAsync(id, updateThemeFields);
                             break;
                         }
                         else
@@ -662,16 +639,13 @@ namespace DesktopPsychologist_WF
                             newTheme.pathImage = "img/service.jpg";
                             newTheme.themeName = themeForm.txtName.Text;
                             newTheme.text = themeForm.txtDescription.Text;
-                            //db.SetTheme(newTheme);
-                            apiClient.CreateThemeAsync(newTheme);
+                            await apiClient.CreateThemeAsync(newTheme);
                             break;
                         }
                     }
 
                 } while (dialogResult == DialogResult.OK);
             }
-
         }
-
     }
 }

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 using DesktopPsychologist_WF.Models;
 
@@ -19,19 +17,18 @@ namespace DesktopPsychologist_WF.Services
         Task<List<Theme>> GetThemesAsync();
         Task<Theme> GetThemeAsync(int id);
         Task<Uri> CreateThemeAsync(Theme newTheme);
-        Task<Theme> UpdateThemeAsync(int id, Theme theme);
+        Task UpdateThemeAsync(int id, Theme theme);
         Task<HttpStatusCode> DeleteThemeAsync(int id);
 
         Task<List<Review>> GetReviewsAsync();
         Task<Review> GetReviewAsync(int id);
         Task<Uri> CreateReviewAsync(Review newReview);
-        Task<Review> UpdateReviewAsync(int id, Review review);
+        Task UpdateReviewAsync(int id, Review review);
         Task<HttpStatusCode> DeleteReviewAsync(int id);
 
     }
     internal class ApiHttpClient : IHttpClient
     {
-
         private HttpClient client;
 
         public ApiHttpClient()
@@ -108,15 +105,11 @@ namespace DesktopPsychologist_WF.Services
             }
         }
 
-        public async Task<Theme> UpdateThemeAsync(int id, Theme theme)
+        public async Task UpdateThemeAsync(int id, Theme theme)
         {
             HttpResponseMessage response = await client.PutAsJsonAsync($"themes/{id}", theme);
             response.EnsureSuccessStatusCode();
-
-            theme = await response.Content.ReadAsAsync<Theme>();
-            return theme;
         }
-
 
 
         // ================================== ОТЗЫВЫ =========================================
@@ -146,6 +139,7 @@ namespace DesktopPsychologist_WF.Services
                 return review;
             }
         }
+
         public async Task<List<Review>> GetReviewsAsync()
         {
             List<Review> reviews = null;
@@ -159,15 +153,11 @@ namespace DesktopPsychologist_WF.Services
             }
         }
 
-        public async Task<Review> UpdateReviewAsync(int id, Review review)
+        public async Task UpdateReviewAsync(int id, Review review)
         {
             HttpResponseMessage response = await client.PutAsJsonAsync($"reviews/{id}", review);
             response.EnsureSuccessStatusCode();
 
-            review = await response.Content.ReadAsAsync<Review>();
-            return review;
         }
-
-
     }
 }
